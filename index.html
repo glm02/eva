@@ -3,452 +3,520 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pour Eva | Surprise</title>
+    <title>TCSI Planner - Hub Étudiant</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel pour compiler le JSX à la volée -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Outfit:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+    <!-- Ical.js pour le parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ical.js/1.5.0/ical.min.js"></script>
     
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- FullCalendar (Core + Plugins) -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- GSAP Animation Library (Chargement sécurisé) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
+    <!-- Configuration Tailwind personnalisée -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            800: '#1e293b', // Bleu Marine TCSI
+                            900: '#0f172a',
+                        },
+                        industrial: {
+                            500: '#f97316', // Orange Industriel
+                            600: '#ea580c',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
 
     <style>
-        :root {
-            --primary: #e11d48;
-            --secondary: #fb7185;
-            --bg-color: #fff1f2;
-        }
-
-        body {
-            font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-color);
-            overflow: hidden; /* Bloqué jusqu'à l'intro */
-        }
-
-        .font-serif { font-family: 'Playfair Display', serif; }
-        .font-cursive { font-family: 'Great Vibes', cursive; }
-
-        /* Intro Overlay Styles */
-        #intro-overlay {
-            position: fixed;
-            inset: 0;
-            background: #000;
-            z-index: 9999; /* Très haut */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            color: white;
-            transition: opacity 0.8s ease;
-        }
-
-        .glow-btn {
-            box-shadow: 0 0 20px rgba(225, 29, 72, 0.5);
-            transition: all 0.3s ease;
-            cursor: pointer;
-            position: relative;
-            z-index: 10000; /* Au-dessus de l'overlay */
-            -webkit-tap-highlight-color: transparent;
-        }
-        .glow-btn:active {
-            transform: scale(0.95);
-        }
-        .glow-btn:hover {
-            box-shadow: 0 0 40px rgba(225, 29, 72, 0.8);
-            transform: scale(1.05);
-        }
-
-        /* Floating Hearts Background */
-        .bg-hearts {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: -1;
-            overflow: hidden;
-        }
+        body { background-color: #f8fafc; }
+        /* Scrollbar clean */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
-        .big-heart-anim {
-            animation: heartbeat 1.5s infinite;
+        /* FullCalendar Customization */
+        .fc {
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+            font-family: 'Inter', sans-serif;
+            border: 1px solid #e2e8f0;
         }
-        
-        @keyframes heartbeat {
-            0% { transform: scale(1); }
-            14% { transform: scale(1.1); }
-            28% { transform: scale(1); }
-            42% { transform: scale(1.1); }
-            70% { transform: scale(1); }
-        }
+        .fc-toolbar-title { font-size: 1.25rem !important; font-weight: 700; color: #1e293b; }
+        .fc-button-primary { background-color: #1e293b !important; border-color: #1e293b !important; }
+        .fc-button-primary:hover { background-color: #0f172a !important; }
+        .fc-button-active { background-color: #f97316 !important; border-color: #f97316 !important; }
+        .fc-event { border: none !important; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .fc-timegrid-slot { height: 3rem !important; } /* Plus d'espace */
 
-        /* Fallback de sécurité : si JS plante, on cache l'overlay */
-        .force-hide {
-            display: none !important;
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #f97316;
+            animation: spin 1s linear infinite;
         }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="antialiased text-slate-800">
+<body>
+    <div id="root"></div>
 
-    <!-- INTRO OVERLAY -->
-    <div id="intro-overlay">
-        <div class="text-center p-6 max-w-md relative z-10">
-            <div class="mb-8 text-rose-500 text-6xl animate-pulse">
-                <i class="fa-solid fa-envelope-open-text"></i>
-            </div>
-            <h1 class="text-3xl md:text-4xl font-serif text-white mb-4">Une surprise pour Eva...</h1>
-            <p class="text-slate-400 mb-8 italic">Quelqu'un a pensé très fort à toi.</p>
-            
-            <button id="start-btn" class="glow-btn bg-rose-600 text-white px-8 py-4 rounded-full font-bold text-lg tracking-wide uppercase flex items-center gap-3 mx-auto select-none">
-                <i class="fa-solid fa-heart"></i> Ouvrir
-            </button>
-        </div>
-    </div>
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
-    <!-- MAIN CONTENT (Caché au début) -->
-    <main id="main-content" class="opacity-0 min-h-screen relative pb-20 flex flex-col items-center transition-opacity duration-1000">
-        
-        <!-- Background Animation -->
-        <div class="bg-hearts" id="heart-container"></div>
+        // --- ICONS COMPONENT WRAPPER ---
+        const Icon = ({ name, size = 20, className = "" }) => {
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            }, [name]);
+            return <i data-lucide={name} width={size} height={size} className={className}></i>;
+        };
 
-        <!-- Header / Hero Section -->
-        <section class="min-h-screen flex flex-col items-center justify-center pt-10 px-4 relative w-full text-center">
-            
-            <div class="absolute top-6 left-6 text-rose-600 font-bold tracking-widest text-sm uppercase opacity-50">
-                14 Février 2026
-            </div>
-
-            <!-- Animated Icon instead of Photo -->
-            <div class="mb-12 relative">
-                <div class="absolute inset-0 bg-rose-400 blur-3xl opacity-20 rounded-full animate-pulse"></div>
-                <i class="fa-solid fa-heart text-9xl text-rose-500 big-heart-anim drop-shadow-2xl"></i>
-            </div>
-
-            <div class="max-w-3xl mx-auto z-10 space-y-6">
-                <h1 class="text-6xl md:text-8xl font-serif text-slate-900 leading-tight">
-                    Joyeuse <br><span class="text-rose-600 italic font-cursive">Saint Valentin</span>
-                </h1>
-                
-                <!-- Typing Effect Container -->
-                <div class="h-24 flex items-center justify-center">
-                    <p id="typewriter-text" class="text-2xl md:text-3xl text-slate-600 font-light"></p>
-                </div>
-                
-                <div class="pt-12 animate-bounce">
-                    <i class="fa-solid fa-chevron-down text-rose-400 text-2xl"></i>
-                </div>
-            </div>
-        </section>
-
-        <!-- Message Section -->
-        <section class="py-24 px-6 max-w-4xl mx-auto text-center relative w-full">
-            <!-- Decor -->
-            <i class="fa-solid fa-star text-yellow-400 text-2xl absolute top-20 left-10 md:left-0 animate-spin-slow" style="animation-duration: 4s;"></i>
-            <i class="fa-solid fa-star text-yellow-400 text-xl absolute bottom-20 right-10 md:right-0 animate-spin-slow" style="animation-duration: 5s;"></i>
-
-            <div class="bg-white/60 backdrop-blur-md p-10 md:p-16 rounded-3xl shadow-xl border border-white/50 section-element transform hover:scale-[1.01] transition-transform duration-500">
-                <i class="fa-solid fa-quote-left text-5xl text-rose-300 mb-8 block"></i>
-                
-                <h2 class="text-3xl md:text-4xl font-bold text-slate-800 mb-8 font-serif">Mon Message pour Toi</h2>
-                
-                <div class="space-y-6 text-lg md:text-xl text-slate-600 leading-relaxed font-light">
-                    <p>
-                        Ma chère Eva,
-                    </p>
-                    <p>
-                        Je n'ai pas besoin de photos pour me rappeler à quel point tu es belle, drôle et intelligente. Chaque moment passé avec toi est gravé dans ma tête.
-                    </p>
-                    <p>
-                        Que ce soit pour manger une glace, boire un verre ou juste ne rien faire, tu rends tout meilleur.
-                    </p>
-                    <p class="font-bold text-rose-600 text-2xl mt-8 font-cursive">
-                        Je t'aime.
-                    </p>
-                </div>
-
-                <div class="mt-12 flex justify-center items-center gap-4">
-                    <div class="h-px w-12 bg-rose-300"></div>
-                    <span class="text-rose-500 font-bold uppercase tracking-widest text-sm">Ton Rafael</span>
-                    <div class="h-px w-12 bg-rose-300"></div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Final Surprise Button -->
-        <section class="py-20 text-center pb-32 w-full">
-            <h2 class="text-2xl font-serif mb-8 text-slate-700">J'ai une dernière chose...</h2>
-            
-            <div class="relative inline-block group cursor-pointer" onclick="showFinalSurprise()">
-                <div class="absolute -inset-1 bg-gradient-to-r from-rose-600 to-orange-600 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-200 animate-tilt"></div>
-                <button class="relative bg-black text-white px-12 py-6 rounded-full font-bold text-xl flex items-center gap-4 transition-transform active:scale-95">
-                    <i class="fa-solid fa-gift text-rose-500 text-2xl animate-bounce"></i>
-                    Clique pour ton cadeau
-                </button>
-            </div>
-        </section>
-    </main>
-
-    <!-- FINAL MODAL -->
-    <div id="final-modal" class="fixed inset-0 z-50 bg-black/90 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-8 max-w-lg w-full text-center relative overflow-hidden shadow-2xl">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-black transition">
-                <i class="fa-solid fa-times text-2xl"></i>
-            </button>
-            
-            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-rose-500 to-orange-500"></div>
-
-            <div class="mb-6 mt-4">
-                <div class="w-24 h-24 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-500 text-4xl">
-                    <i class="fa-solid fa-utensils"></i>
-                </div>
-            </div>
-
-            <h3 class="text-4xl font-serif font-bold text-slate-900 mb-2">Bon pour...</h3>
-            <p class="text-rose-600 font-bold text-2xl mb-2">Un Dîner en Amoureux ! 🥂</p>
-            
-            <p class="text-gray-500 mb-8 font-light">
-                Une soirée rien que pour nous.<br>
-                Mets-toi sur ton 31 !
-            </p>
-
-            <!-- Calendar Details -->
-            <div class="bg-slate-50 rounded-2xl p-6 mb-8 border border-slate-100">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-slate-400 text-sm font-bold uppercase tracking-wider">Quand ?</span>
-                    <span class="text-rose-500 font-bold"><i class="fa-regular fa-clock mr-2"></i>20:00</span>
-                </div>
-                <p class="text-slate-800 font-bold text-xl mb-1">Samedi dans 2 semaines</p>
-                <p class="text-slate-500 text-sm">Réserve ta soirée ❤️</p>
-            </div>
-
-            <button onclick="addToCalendar()" class="w-full py-4 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition flex justify-center items-center gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-                <i class="fa-solid fa-calendar-plus text-rose-400"></i> Ajouter à ton agenda
-            </button>
-        </div>
-    </div>
-
-    <script>
-        // Fonction principale chargée uniquement quand tout est prêt
-        window.addEventListener('load', () => {
-            console.log("Site chargé, initialisation des animations...");
-
-            // 1. Initialisation GSAP (avec sécurité try/catch)
-            try {
-                if (typeof gsap !== 'undefined') {
-                    gsap.registerPlugin(ScrollTrigger, TextPlugin);
-                } else {
-                    console.error("GSAP n'est pas chargé.");
-                    // Si GSAP bug, on ouvre le site quand même manuellement en cliquant
-                }
-            } catch (e) {
-                console.log("Erreur plugins GSAP:", e);
+        // --- MOCK DATA / CONSTANTS (POUR LES NOTES & PROJETS SEULEMENT) ---
+        const NOTES_DATA = [
+            {
+                ue: "UE1 : Marketing & Vente BtoB",
+                coeff: 4,
+                subjects: [
+                    { name: "Marketing Industriel", grade: 14, coeff: 2 },
+                    { name: "Négociation Achat/Vente", grade: 16.5, coeff: 3 },
+                    { name: "Relation Client", grade: 12, coeff: 1 }
+                ]
+            },
+            {
+                ue: "UE2 : Communication & Négociation",
+                coeff: 3,
+                subjects: [
+                    { name: "Anglais Business", grade: 15, coeff: 2 },
+                    { name: "Communication Digitale", grade: 13, coeff: 1 },
+                    { name: "Droit des Affaires", grade: null, coeff: 1.5 } 
+                ]
+            },
+            {
+                ue: "UE3 : Environnement Industriel",
+                coeff: 5,
+                subjects: [
+                    { name: "Logistique & Supply Chain", grade: 11, coeff: 2 },
+                    { name: "Technologie Industrielle", grade: 18, coeff: 3 },
+                    { name: "Qualité & RSE", grade: 14, coeff: 1 }
+                ]
             }
+        ];
 
-            // 2. Gestionnaire du bouton OUVRIR
-            const startBtn = document.getElementById('start-btn');
-            const introOverlay = document.getElementById('intro-overlay');
-            const mainContent = document.getElementById('main-content');
+        // --- NOUVEAU HOOK: useAdePlanning (IMPLEMENTATION STRICTE) ---
+        const PROXY_URL = "https://api.allorigins.win/get?url=";
+        const ADE_URL = "https://edt.univ-lyon1.fr/jsp/custom/modules/plannings/anonymous_cal.jsp?resources=5782&projectId=1&calType=ical&firstDate=2025-08-18&lastDate=2026-08-01";
 
-            startBtn.addEventListener('click', () => {
-                console.log("Bouton cliqué");
+        const useAdePlanning = () => {
+            const [events, setEvents] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [retryCount, setRetryCount] = useState(0); // Gardé pour le bouton refresh
 
-                // Animation de sortie de l'intro
-                if (typeof gsap !== 'undefined') {
-                    // Version animée
-                    gsap.to(introOverlay, {
-                        opacity: 0,
-                        y: -100,
-                        duration: 1,
-                        ease: "power4.inOut",
-                        onComplete: () => {
-                            introOverlay.style.display = 'none';
-                            document.body.style.overflow = 'auto'; 
-                            launchMainAnimations();
+            useEffect(() => {
+                const fetchIcs = async () => {
+                    setLoading(true);
+                    setError(null);
+                    try {
+                        console.log("Fetching ADE via Proxy...");
+                        // 1. On passe par AllOrigins (endpoint /get) pour éviter l'erreur CORS
+                        const response = await fetch(PROXY_URL + encodeURIComponent(ADE_URL));
+                        if (!response.ok) throw new Error("Erreur réseau proxy");
+                        
+                        const json = await response.json();
+                        // AllOrigins renvoie le contenu du fichier dans .contents
+                        const icsData = json.contents; 
+
+                        if (!icsData) throw new Error("Fichier ICS vide ou illisible");
+
+                        // 2. Parsing avec ical.js
+                        const jcalData = ICAL.parse(icsData);
+                        const comp = new ICAL.Component(jcalData);
+                        const vevents = comp.getAllSubcomponents('vevent');
+
+                        // 3. Mapping pour FullCalendar
+                        const formattedEvents = vevents.map(vevent => {
+                            const event = new ICAL.Event(vevent);
+                            const summary = event.summary || "Cours inconnu";
+                            
+                            // Code couleur simple
+                            let color = '#3b82f6'; // Bleu par défaut
+                            if (summary.includes('TP')) color = '#f97316'; // Orange
+                            if (summary.includes('CM')) color = '#1e293b'; // Marine
+                            if (summary.includes('Exam') || summary.includes('DS')) color = '#ef4444'; // Rouge
+
+                            return {
+                                id: event.uid,
+                                title: summary,
+                                start: event.startDate.toJSDate(), // Conversion date JS
+                                end: event.endDate.toJSDate(),
+                                extendedProps: {
+                                    location: event.location || "Salle inconnue",
+                                    description: event.description,
+                                    prof: event.description // Pour compatibilité affichage
+                                },
+                                backgroundColor: color,
+                                borderColor: color,
+                                textColor: '#ffffff'
+                            };
+                        });
+
+                        console.log(`${formattedEvents.length} événements chargés !`);
+                        setEvents(formattedEvents);
+                    } catch (err) {
+                        console.error("Erreur chargement ADE:", err);
+                        setError("Impossible de charger le planning (Erreur CORS ou URL)");
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+
+                fetchIcs();
+            }, [retryCount]);
+
+            const retry = () => setRetryCount(c => c + 1);
+
+            return { events, loading, error, retry };
+        };
+
+        // --- COMPONENTS ---
+
+        const Card = ({ children, className = "" }) => (
+            <div className={`bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden ${className}`}>
+                {children}
+            </div>
+        );
+
+        // --- FULLCALENDAR COMPONENT WRAPPER ---
+        const FullCalendarComponent = ({ events }) => {
+            const calendarRef = useRef(null);
+            const calendarInstance = useRef(null);
+
+            useEffect(() => {
+                if (calendarRef.current) {
+                    calendarInstance.current = new FullCalendar.Calendar(calendarRef.current, {
+                        initialView: window.innerWidth < 768 ? 'timeGridDay' : 'timeGridWeek',
+                        headerToolbar: {
+                            left: 'prev,next today',
+                            center: 'title',
+                            right: 'timeGridWeek,timeGridDay'
+                        },
+                        events: events,
+                        locale: 'fr',
+                        firstDay: 1, // Lundi
+                        slotMinTime: '08:00:00',
+                        slotMaxTime: '20:00:00',
+                        allDaySlot: false,
+                        weekends: false, // Cache les samedis/dimanches par défaut
+                        height: 'auto',
+                        slotDuration: '00:30:00',
+                        nowIndicator: true,
+                        buttonText: {
+                            today: "Aujourd'hui",
+                            month: 'Mois',
+                            week: 'Semaine',
+                            day: 'Jour'
+                        },
+                        eventContent: function(arg) {
+                            // Custom render for event content
+                            return {
+                                html: `
+                                    <div class="p-1 overflow-hidden">
+                                        <div class="font-bold text-xs">${arg.timeText}</div>
+                                        <div class="font-bold truncate">${arg.event.title}</div>
+                                        ${arg.event.extendedProps.location ? `<div class="text-[10px] opacity-90 truncate">📍 ${arg.event.extendedProps.location}</div>` : ''}
+                                    </div>
+                                `
+                            }
                         }
                     });
-                } else {
-                    // Version de secours (si le script bug)
-                    introOverlay.style.opacity = '0';
-                    setTimeout(() => {
-                        introOverlay.style.display = 'none';
-                        document.body.style.overflow = 'auto';
-                        mainContent.style.opacity = '1';
-                    }, 500);
+                    
+                    calendarInstance.current.render();
                 }
-            });
 
-            // 3. Animation des Cœurs en fond
-            setInterval(createHeart, 600);
-        });
+                return () => {
+                    if (calendarInstance.current) {
+                        calendarInstance.current.destroy();
+                    }
+                };
+            }, []);
 
-        // Fonction pour lancer les animations principales
-        function launchMainAnimations() {
-            const mainContent = document.getElementById('main-content');
-            mainContent.classList.remove('opacity-0');
-            mainContent.style.opacity = '1';
+            // Update events when prop changes
+            useEffect(() => {
+                if (calendarInstance.current) {
+                    // Remove all events and add new ones
+                    calendarInstance.current.removeAllEvents();
+                    calendarInstance.current.addEventSource(events);
+                }
+            }, [events]);
 
-            if (typeof gsap !== 'undefined') {
-                // Animate Big Heart
-                gsap.from(".fa-heart.text-9xl", {
-                    scale: 0,
-                    rotation: -180,
-                    opacity: 0,
-                    duration: 1.5,
-                    ease: "elastic.out(1, 0.5)"
-                });
+            return <div ref={calendarRef} className="animate-fade-in" />;
+        };
 
-                // Text Typing Effect
-                gsap.to("#typewriter-text", {
-                    text: "À la femme la plus incroyable...",
-                    duration: 3,
-                    delay: 0.5,
-                    ease: "none"
-                });
+        // --- FEATURE: CALENDAR VIEW ---
+        const CalendarView = ({ events, loading, error, retry }) => {
+            if (loading) return (
+                <div className="flex flex-col items-center justify-center p-12 h-96">
+                    <div className="loading-spinner mb-4"></div>
+                    <p className="text-slate-500 animate-pulse">Récupération du planning ADE...</p>
+                </div>
+            );
 
-                // Message Box Slide Up
-                gsap.from(".section-element", {
-                    scrollTrigger: {
-                        trigger: ".section-element",
-                        start: "top 80%"
-                    },
-                    y: 100,
-                    opacity: 0,
-                    duration: 1,
-                    ease: "power3.out"
-                });
-            }
-        }
+            if (error) return (
+                <div className="flex flex-col items-center justify-center p-8 text-center bg-red-50 border border-red-200 rounded-xl h-96">
+                    <div className="text-red-500 mb-2"><Icon name="wifi-off" size={48} /></div>
+                    <h3 className="text-lg font-bold text-red-700 mb-2">Erreur de connexion</h3>
+                    <p className="text-red-600 mb-4 max-w-md">{error}</p>
+                    <button onClick={retry} className="px-4 py-2 bg-navy-800 text-white rounded-lg hover:bg-navy-900 transition-colors flex items-center gap-2">
+                        <Icon name="refresh-cw" size={16} /> Réessayer
+                    </button>
+                </div>
+            );
 
-        // --- BACKGROUND HEARTS ---
-        function createHeart() {
-            const container = document.getElementById('heart-container');
-            if(!container) return; 
+            return (
+                <div className="space-y-4">
+                    <header className="flex justify-between items-center mb-2">
+                         <div>
+                            <h2 className="text-2xl font-bold text-navy-800">Mon Emploi du Temps</h2>
+                            <p className="text-slate-500 text-sm">Synchronisé avec ADE Lyon 1 (Réel)</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={retry} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full" title="Forcer la synchro">
+                                <Icon name="refresh-cw" size={18} />
+                            </button>
+                        </div>
+                    </header>
+                    
+                    <FullCalendarComponent events={events} />
+                    
+                    <div className="flex gap-4 mt-4 text-sm justify-center md:justify-start flex-wrap">
+                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-navy-800"></div> CM (Cours)</div>
+                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500"></div> Autre</div>
+                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-industrial-500"></div> TP (Pratiques)</div>
+                         <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500"></div> Exam/DS</div>
+                    </div>
+                </div>
+            );
+        };
 
-            const heart = document.createElement('div');
-            heart.innerHTML = '<i class="fa-solid fa-heart"></i>';
-            heart.className = 'absolute text-rose-300/20'; 
-            
-            const startLeft = Math.random() * 100;
-            const size = Math.random() * 20 + 10;
-            const duration = Math.random() * 10 + 10;
-
-            heart.style.left = startLeft + 'vw';
-            heart.style.fontSize = size + 'px';
-            heart.style.top = '100vh';
-
-            container.appendChild(heart);
-
-            if (typeof gsap !== 'undefined') {
-                gsap.to(heart, {
-                    y: -120 + 'vh',
-                    rotation: 360,
-                    duration: duration,
-                    ease: "linear",
-                    onComplete: () => heart.remove()
-                });
-            } else {
-                // Fallback si GSAP marche pas
-                heart.style.transition = `top ${duration}s linear, transform ${duration}s linear`;
-                setTimeout(() => {
-                    heart.style.top = '-10vh';
-                    heart.style.transform = 'rotate(360deg)';
-                }, 100);
-                setTimeout(() => heart.remove(), duration * 1000);
-            }
-        }
-
-        // --- SURPRISE & CALENDAR LOGIC ---
-        function showFinalSurprise() {
-            const modal = document.getElementById('final-modal');
-            modal.classList.remove('hidden');
-            
-            if (typeof gsap !== 'undefined') {
-                gsap.from(modal.children[0], {
-                    scale: 0.8,
-                    opacity: 0,
-                    duration: 0.4,
-                    ease: "back.out(1.7)"
-                });
-            }
-            createConfetti();
-        }
-
-        function closeModal() {
-            document.getElementById('final-modal').classList.add('hidden');
-        }
-
-        function addToCalendar() {
-            const now = new Date();
-            const eventDate = new Date(now.getTime() + (14 * 24 * 60 * 60 * 1000)); // +14 days
-            eventDate.setHours(20, 0, 0);
-            
-            const year = eventDate.getFullYear();
-            const month = String(eventDate.getMonth() + 1).padStart(2, '0');
-            const day = String(eventDate.getDate()).padStart(2, '0');
-            const hour = String(eventDate.getHours()).padStart(2, '0');
-            const minutes = String(eventDate.getMinutes()).padStart(2, '0');
-            
-            const startStr = `${year}${month}${day}T${hour}${minutes}00`;
-            const endStr = `${year}${month}${day}T230000`; 
-
-            const icsContent = 
-`BEGIN:VCALENDAR
-VERSION:2.0
-BEGIN:VEVENT
-URL:${window.location.href}
-DTSTART:${startStr}
-DTEND:${endStr}
-SUMMARY:Dîner Surprise avec Rafael ❤️
-DESCRIPTION:Soirée romantique réservée ! Surprise totale.
-LOCATION:Lieu Secret
-END:VEVENT
-END:VCALENDAR`;
-
-            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-            const link = document.createElement('a');
-            link.href = window.URL.createObjectURL(blob);
-            link.setAttribute('download', 'Soiree_Romantique.ics');
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function createConfetti() {
-            for(let i=0; i<60; i++) {
-                const conf = document.createElement('div');
-                conf.style.position = 'fixed';
-                conf.style.left = '50%';
-                conf.style.top = '50%';
-                conf.style.width = Math.random() * 10 + 5 + 'px';
-                conf.style.height = Math.random() * 10 + 5 + 'px';
-                conf.style.backgroundColor = ['#e11d48', '#fb7185', '#fecdd3', '#fbbf24'][Math.floor(Math.random()*4)];
-                conf.style.borderRadius = '50%';
-                conf.style.zIndex = 100;
-                document.body.appendChild(conf);
-                
-                const angle = Math.random() * Math.PI * 2;
-                const velocity = 250 + Math.random() * 250;
-                const tx = Math.cos(angle) * velocity;
-                const ty = Math.sin(angle) * velocity;
-
-                if (typeof gsap !== 'undefined') {
-                    gsap.to(conf, {
-                        x: tx,
-                        y: ty,
-                        opacity: 0,
-                        duration: 1.5 + Math.random(),
-                        ease: "power2.out",
-                        onComplete: () => conf.remove()
+        // --- FEATURE: GRADES (UNCHANGED) ---
+        const GradesView = () => {
+            const globalStats = useMemo(() => {
+                let totalPoints = 0, totalCoeff = 0;
+                NOTES_DATA.forEach(ue => {
+                    ue.subjects.forEach(sub => {
+                        if (sub.grade !== null) {
+                            totalPoints += sub.grade * sub.coeff;
+                            totalCoeff += sub.coeff;
+                        }
                     });
-                } else {
-                    conf.remove(); // Pas de confettis si pas de GSAP pour garder ça propre
-                }
-            }
+                });
+                return totalCoeff > 0 ? (totalPoints / totalCoeff).toFixed(2) : "N/A";
+            }, []);
+
+            return (
+                <div className="space-y-6">
+                    <header className="flex justify-between items-end">
+                        <div>
+                            <h2 className="text-2xl font-bold text-navy-800">Mes Résultats</h2>
+                            <p className="text-slate-500">Suivi des notes BUT TCSI</p>
+                        </div>
+                        <div className="text-right">
+                            <span className="text-sm text-slate-500 uppercase font-semibold">Moyenne Générale</span>
+                            <div className="text-3xl font-bold text-industrial-500">{globalStats} / 20</div>
+                        </div>
+                    </header>
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {NOTES_DATA.map((ue, idx) => {
+                            let uePoints = 0, ueCoeff = 0;
+                            ue.subjects.forEach(s => {
+                                if(s.grade !== null) { uePoints += s.grade * s.coeff; ueCoeff += s.coeff; }
+                            });
+                            const ueAvg = ueCoeff > 0 ? (uePoints / ueCoeff).toFixed(2) : "N/A";
+                            return (
+                                <Card key={idx} className="flex flex-col">
+                                    <div className="p-4 bg-navy-800 text-white">
+                                        <div className="flex justify-between items-start">
+                                            <h3 className="font-bold text-sm opacity-90">{ue.ue}</h3>
+                                            <span className="bg-white/20 px-2 py-0.5 rounded text-xs">Coef {ue.coeff}</span>
+                                        </div>
+                                        <div className="mt-2 text-2xl font-bold">{ueAvg}</div>
+                                    </div>
+                                    <div className="p-4 space-y-3 flex-1">
+                                        {ue.subjects.map((sub, sIdx) => (
+                                            <div key={sIdx} className="flex justify-between items-center text-sm border-b border-slate-100 last:border-0 pb-2 last:pb-0">
+                                                <div className="flex-1">
+                                                    <div className="font-medium text-slate-700">{sub.name}</div>
+                                                    <div className="text-xs text-slate-400">Coef {sub.coeff}</div>
+                                                </div>
+                                                <div className={`font-bold ${sub.grade >= 10 ? 'text-emerald-600' : sub.grade === null ? 'text-slate-300' : 'text-red-500'}`}>
+                                                    {sub.grade !== null ? sub.grade : '-'}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </Card>
+                            )
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- FEATURE: PROJECTS (KANBAN) (UNCHANGED) ---
+        const ProjectsView = () => {
+            const [projects, setProjects] = useState([
+                { id: 1, title: "SAÉ 2.1 - Étude marché Pompe à Chaleur", status: "DOING", due: "15/03", members: ["Toi", "Léa", "Marc"] },
+                { id: 2, title: "SAÉ 1.2 - Vente simulée (Sketch)", status: "TODO", due: "20/03", members: ["Toi", "Thomas"] },
+                { id: 3, title: "Dossier Droit des contrats", status: "DONE", due: "10/02", members: ["Indiv."] },
+            ]);
+            const moveProject = (id, newStatus) => {
+                setProjects(projects.map(p => p.id === id ? { ...p, status: newStatus } : p));
+            };
+            const columns = [
+                { id: 'TODO', label: 'À faire', color: 'bg-slate-200' },
+                { id: 'DOING', label: 'En cours', color: 'bg-industrial-500/10 text-industrial-600' },
+                { id: 'DONE', label: 'Terminé', color: 'bg-emerald-500/10 text-emerald-600' }
+            ];
+            return (
+                <div className="h-[calc(100vh-140px)] flex flex-col">
+                    <header className="mb-6">
+                        <h2 className="text-2xl font-bold text-navy-800">Projets SAÉ</h2>
+                        <p className="text-slate-500">Gestion de projet agile</p>
+                    </header>
+                    <div className="flex-1 overflow-x-auto">
+                        <div className="flex gap-4 min-w-[800px] h-full">
+                            {columns.map(col => (
+                                <div key={col.id} className="flex-1 bg-slate-50/50 rounded-xl border border-slate-200 flex flex-col max-h-full">
+                                    <div className={`p-3 font-bold border-b border-slate-100 flex justify-between items-center ${col.color.includes('bg-slate') ? 'text-slate-600' : ''} ${col.id === 'DOING' ? 'text-industrial-600' : ''} ${col.id === 'DONE' ? 'text-emerald-600' : ''}`}>
+                                        {col.label}
+                                        <span className="bg-white px-2 py-0.5 rounded-full text-xs shadow-sm text-black">{projects.filter(p => p.status === col.id).length}</span>
+                                    </div>
+                                    <div className="p-3 space-y-3 overflow-y-auto flex-1">
+                                        {projects.filter(p => p.status === col.id).map(p => (
+                                            <Card key={p.id} className="p-3 hover:shadow-md cursor-pointer transition-all border-l-4 border-l-transparent hover:border-l-industrial-500">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <span className="text-xs font-semibold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">J-{p.due.split('/')[0]}</span>
+                                                    <div className="flex gap-1">
+                                                        {col.id !== 'TODO' && <button onClick={() => moveProject(p.id, col.id === 'DONE' ? 'DOING' : 'TODO')} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-navy-800"><Icon name="arrow-left" size={14}/></button>}
+                                                        {col.id !== 'DONE' && <button onClick={() => moveProject(p.id, col.id === 'TODO' ? 'DOING' : 'DONE')} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-navy-800"><Icon name="arrow-right" size={14}/></button>}
+                                                    </div>
+                                                </div>
+                                                <h4 className="font-bold text-slate-800 text-sm mb-3">{p.title}</h4>
+                                                <div className="flex items-center justify-between text-xs text-slate-500">
+                                                    <div className="flex -space-x-2">
+                                                        {p.members.map((m, i) => <div key={i} className="w-6 h-6 rounded-full bg-navy-800 text-white flex items-center justify-center border border-white text-[10px]" title={m}>{m.charAt(0)}</div>)}
+                                                    </div>
+                                                    <div className="flex items-center gap-1"><Icon name="calendar" size={12} /> {p.due}</div>
+                                                </div>
+                                            </Card>
+                                        ))}
+                                        <button className="w-full py-2 border border-dashed border-slate-300 rounded-lg text-slate-400 text-sm hover:border-industrial-500 hover:text-industrial-500 transition-colors flex items-center justify-center gap-2">
+                                            <Icon name="plus" size={16} /> Ajouter une tâche
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )
         }
+
+        // --- MAIN APP ---
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('agenda');
+            // Utilisation du nouveau hook useAdePlanning
+            const { events, loading, error, retry } = useAdePlanning();
+
+            const navItems = [
+                { id: 'agenda', label: 'Mon Agenda', icon: 'calendar' },
+                { id: 'grades', label: 'Mes Notes', icon: 'bar-chart-2' },
+                { id: 'projects', label: 'Projets SAÉ', icon: 'trello' },
+                { id: 'profile', label: 'Profil', icon: 'user' },
+            ];
+
+            const renderContent = () => {
+                switch(activeTab) {
+                    case 'agenda': return <CalendarView events={events} loading={loading} error={error} retry={retry} />;
+                    case 'grades': return <GradesView />;
+                    case 'projects': return <ProjectsView />;
+                    default: return <div className="p-8 text-center text-slate-500">Section en construction</div>;
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col md:flex-row">
+                    {/* Mobile Header */}
+                    <div className="md:hidden bg-navy-800 text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
+                        <div className="font-bold text-xl flex items-center gap-2"><span className="text-industrial-500"><Icon name="hexagon" /></span> TCSI Planner</div>
+                        <button className="p-2"><Icon name="bell" /></button>
+                    </div>
+
+                    {/* Desktop Sidebar */}
+                    <aside className="hidden md:flex flex-col w-64 bg-navy-800 text-white h-screen sticky top-0 shadow-xl">
+                        <div className="p-6">
+                            <h1 className="text-2xl font-bold flex items-center gap-2"><span className="text-industrial-500"><Icon name="hexagon" className="fill-current" /></span> TCSI Planner</h1>
+                            <p className="text-xs text-slate-400 mt-1">Assistant Systèmes Industriels</p>
+                        </div>
+                        <nav className="flex-1 px-4 py-6 space-y-2">
+                            {navItems.map(item => (
+                                <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeTab === item.id ? 'bg-industrial-500 text-white shadow-lg shadow-industrial-500/30' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}>
+                                    <Icon name={item.icon} size={20} /> <span className="font-medium">{item.label}</span>
+                                </button>
+                            ))}
+                        </nav>
+                        <div className="p-4 mt-auto">
+                            <div className="bg-navy-900 rounded-xl p-4 flex items-center gap-3 border border-white/10">
+                                <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-navy-900 font-bold">ET</div>
+                                <div><div className="text-sm font-bold">Étudiante TCSI</div><div className="text-xs text-slate-400">Lyon 1 - Semestre 2</div></div>
+                            </div>
+                        </div>
+                    </aside>
+
+                    {/* Main Content */}
+                    <main className="flex-1 p-4 md:p-8 overflow-y-auto h-[calc(100vh-60px)] md:h-screen">
+                        <div className="max-w-7xl mx-auto">{renderContent()}</div>
+                    </main>
+
+                    {/* Mobile Bottom Nav */}
+                    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-3 pb-safe z-50">
+                        {navItems.map(item => (
+                            <button key={item.id} onClick={() => setActiveTab(item.id)} className={`flex flex-col items-center gap-1 ${activeTab === item.id ? 'text-industrial-600' : 'text-slate-400'}`}>
+                                <Icon name={item.icon} size={24} /><span className="text-[10px] font-medium">{item.label}</span>
+                            </button>
+                        ))}
+                    </nav>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
